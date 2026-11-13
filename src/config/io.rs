@@ -20,6 +20,10 @@ const KNOWN_TOP_LEVEL_CONFIG_KEYS: &[&str] = &[
 ];
 
 pub fn app_dir_name() -> &'static str {
+    // er0s distribution (ER0S.md): own namespace, coexists with an installed herdr.
+    if crate::er0s_distribution::ACTIVE {
+        return crate::er0s_distribution::app_dir_name(cfg!(debug_assertions));
+    }
     if cfg!(debug_assertions) {
         "herdr-dev"
     } else {
