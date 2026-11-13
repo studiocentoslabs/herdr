@@ -55,9 +55,9 @@ if [ "$SOLO_PLUGIN" = 0 ]; then
   passo fmt cargo fmt --check
   passo clippy cargo clippy --all-targets --locked -- -D warnings
   if cargo nextest --version >/dev/null 2>&1; then
-    passo test-herdr cargo nextest run --locked --status-level fail --final-status-level fail --failure-output final --success-output never
+    passo test-herdr cargo nextest run --locked --no-fail-fast --status-level fail --final-status-level fail --failure-output final --success-output never
   else
-    passo test-herdr cargo test --locked
+    passo test-herdr cargo test --locked --no-fail-fast
   fi
   passo test-contratti python3 -m unittest scripts.test_ui_hot_path_architecture scripts.test_agent_detection_manifest_check \
     scripts.test_changelog scripts.test_config_reference_check scripts.test_docs_translation_parity \

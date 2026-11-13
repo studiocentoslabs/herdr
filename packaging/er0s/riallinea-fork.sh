@@ -20,6 +20,9 @@
 # Uscita: 0 candidato verde, 1 conflitti o prove rosse, 2 uso sbagliato.
 # Dopo un verde: revisione del diff, poi `git switch er0s/main && git merge --ff-only er0s/riallinea-<tag>` e push al fork.
 set -uo pipefail
+# Tutto il corpo sta fra graffe: bash lo legge intero prima di eseguirlo, cosi' un aggiornamento dello script durante
+# un riallineamento (lungo) non cambia le righe ancora da eseguire.
+{
 
 die() { echo "riallinea: $*" >&2; exit 2; }
 PLUGIN=""; ESITO=""; TAG=""; LAVORO=""; ESEGUI=""; ZIG_PATH=""; ZIG_CACHE=""
@@ -130,3 +133,4 @@ if [ "$stato" = 0 ]; then
 fi
 scrivi "esito=rosso motivo=prove candidato=$candidato (dettagli: rilancia verifica.sh in $wt)"
 exit 1
+}
