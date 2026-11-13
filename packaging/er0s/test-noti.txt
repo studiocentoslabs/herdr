@@ -1,0 +1,5 @@
+# Test di herdr rossi anche su upstream senza patch, sulla macchina delle prove. verifica.sh li esegue a parte e li
+# riporta senza contarli come rossi. Una riga per test (nome nextest), poi un commento con data e prova.
+# Si toglie una riga quando il test torna verde su upstream; mai per far passare una patch er0s.
+machine_api_recovers_a_stale_path_before_sending_a_mutation  # 13/11/2026: rosso su v0.9.5 originale (2ecf19a9) e da solo; ssh finto non raggiunge il socket remoto
+server_survives_hangup_and_logs_why_it_stops  # 13/11/2026: rosso su v0.9.5 originale (2ecf19a9); il log non scrive "server shutdown initiated" entro il tempo del test
