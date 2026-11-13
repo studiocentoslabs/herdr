@@ -56,6 +56,9 @@ base_commit="$(git show er0s/main:ER0S-BASE | sed -n 's/^upstream_commit=//p')"
 [ -n "$TAG" ] || TAG="$(git tag -l 'v[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
 target_commit="$(git rev-parse -q --verify "${TAG}^{commit}")" || { scrivi "esito=rosso motivo=tag-inesistente tag=$TAG"; exit 1; }
 er0s_sha="$(git rev-parse er0s/main)"
+if [ "$target_commit" != "$base_commit" ] && git merge-base --is-ancestor "$target_commit" "$base_commit"; then
+  scrivi "esito=rosso motivo=target-piu-vecchio-della-base tag=$TAG base=$base_tag"; exit 1
+fi
 scrivi "base=$base_tag $base_commit"
 scrivi "target=$TAG $target_commit"
 scrivi "er0s_main=$er0s_sha"
