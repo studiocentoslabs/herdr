@@ -16,6 +16,10 @@ pub(crate) fn app_dir_name(debug: bool) -> &'static str {
     }
 }
 
+/// Why `update` is refused: an upstream binary would replace this distribution.
+pub(crate) const UPDATE_REFUSED: &str =
+    "er0s-terminal does not update from the herdr channel; install a new er0s build (packaging/er0s/riallinea-fork.sh)";
+
 #[cfg(test)]
 mod tests {
     #[test]
