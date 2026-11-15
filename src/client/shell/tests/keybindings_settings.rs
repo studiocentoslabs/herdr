@@ -965,3 +965,69 @@ fn resize_mode_reuses_endpoint_resize_and_stays_active_until_done() {
     assert!(state.handle_input_bytes(b"\r").actions.is_empty());
     assert_eq!(state.mode, ClientShellMode::Terminal);
 }
+
+// er0s fork settings regression (ER0S.md).
+#[test]
+fn er0s_agents_settings_section_is_reachable_in_distribution() {
+    assert_eq!(
+        ClientSettingsSection::ALL
+            .iter()
+            .any(|s| s.label() == "er0s · agenti"),
+        crate::er0s_distribution::ACTIVE,
+    );
+}
+
+#[test]
+fn er0s_agents_keyboard_navigation_saves_without_reloading_server() {
+    let path = std::env::temp_dir()
+        .join(format!("er0s-settings-keyboard-{}", std::process::id()))
+        .join("er0s.toml");
+    let mut state = ClientShellState::new(ClientShellConfig::from_config(&Config::default()));
+    state.set_snapshot(Box::new(snapshot()));
+    state.set_pane_surface(surface());
+    state.open_settings_overlay();
+    let mut outcome = ClientShellInput::default();
+    if let Some(ClientShellOverlay::Settings(settings)) = state.overlay.as_mut() {
+        settings.section = ClientSettingsSection::Er0sAgents;
+        settings.er0s_agents = Some(Box::new(crate::er0s_agents::Editor::load(&path)));
+    }
+    let frame = state.compose(106, 30).unwrap();
+    let text = frame
+        .cells
+        .iter()
+        .map(|cell| cell.symbol.as_str())
+        .collect::<String>();
+    assert!(text.contains("CEO · CLI: claude"));
+    assert!(text.contains("Esecutore di codice · modello: default"));
+    // CEO CLI -> codex. No shell, server reload or plugin action is queued.
+    for code in [KeyCode::Enter, KeyCode::Down, KeyCode::Enter] {
+        state.route_settings_key(&TerminalKey::new(code, KeyModifiers::empty()), &mut outcome);
+    }
+    assert_eq!(
+        crate::er0s_agents::Agents::load(&path).unwrap().0[0].cli,
+        "codex"
+    );
+    for code in [KeyCode::Down, KeyCode::Enter, KeyCode::Down, KeyCode::Enter] {
+        state.route_settings_key(&TerminalKey::new(code, KeyModifiers::empty()), &mut outcome);
+    }
+    assert_eq!(
+        crate::er0s_agents::Agents::load(&path).unwrap().0[0].model,
+        "gpt-6.1-sol"
+    );
+    assert!(outcome.actions.is_empty());
+    let saved = std::fs::read_to_string(&path).unwrap();
+    for code in [KeyCode::Enter, KeyCode::Down, KeyCode::Esc] {
+        state.route_settings_key(&TerminalKey::new(code, KeyModifiers::empty()), &mut outcome);
+    }
+    assert!(matches!(
+        state.overlay,
+        Some(ClientShellOverlay::Settings(_))
+    ));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), saved);
+    state.route_settings_key(
+        &TerminalKey::new(KeyCode::Esc, KeyModifiers::empty()),
+        &mut outcome,
+    );
+    assert!(state.overlay.is_none());
+    std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+}

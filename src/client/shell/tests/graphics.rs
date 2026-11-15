@@ -310,6 +310,7 @@ fn every_dialog_and_menu_occludes_its_panel_not_the_whole_screen() {
         }),
         ClientShellOverlay::GlobalMenu(ClientGlobalMenuOverlay { highlighted: 0 }),
         ClientShellOverlay::Settings(ClientSettingsOverlay {
+            er0s_agents: None,
             section: ClientSettingsSection::Theme,
             selected: 0,
             original_theme_name: String::new(),

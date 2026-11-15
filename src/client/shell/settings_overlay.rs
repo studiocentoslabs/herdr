@@ -1,3 +1,4 @@
+// er0s fork: role preferences in the existing settings overlay (ER0S.md).
 use super::*;
 
 fn choice_style(selected: bool, palette: &Palette) -> Style {
@@ -194,6 +195,71 @@ pub(super) fn render_settings_overlay(
                 &mut choice_hits,
             );
         }
+        ClientSettingsSection::Er0sAgents => {
+            if let Some(editor) = &settings.er0s_agents {
+                let title = editor
+                    .field
+                    .map(|field| {
+                        format!(
+                            "{} · {}",
+                            crate::er0s_agents::LABELS[field / 2],
+                            if field.is_multiple_of(2) {
+                                "CLI"
+                            } else {
+                                "modello"
+                            }
+                        )
+                    })
+                    .unwrap_or_else(|| "er0s · agenti".into());
+                put_text(
+                    buffer,
+                    content.x,
+                    content.y,
+                    content.width,
+                    &title,
+                    Style::default()
+                        .fg(palette.text)
+                        .bg(palette.panel_bg)
+                        .add_modifier(Modifier::BOLD),
+                );
+                put_text(
+                    buffer,
+                    content.x,
+                    content.y + 1,
+                    content.width,
+                    &editor.message,
+                    Style::default()
+                        .fg(if editor.error {
+                            palette.red
+                        } else {
+                            palette.overlay1
+                        })
+                        .bg(palette.panel_bg),
+                );
+                let visible = usize::from(content.height.saturating_sub(3));
+                let scroll = settings.selected.saturating_sub(visible.saturating_sub(1));
+                for (offset, (index, label)) in editor
+                    .choices()
+                    .iter()
+                    .enumerate()
+                    .skip(scroll)
+                    .take(visible)
+                    .enumerate()
+                {
+                    let rect =
+                        Rect::new(content.x, content.y + 3 + offset as u16, content.width, 1);
+                    draw_choice(
+                        buffer,
+                        rect,
+                        label,
+                        index == settings.selected,
+                        false,
+                        palette,
+                    );
+                    choice_hits.push((rect, index));
+                }
+            }
+        }
         ClientSettingsSection::Integrations => {
             render_integrations(buffer, content, settings, palette);
         }
@@ -211,7 +277,13 @@ pub(super) fn render_settings_overlay(
         button(
             buffer,
             primary,
-            if settings.section == ClientSettingsSection::Integrations {
+            if settings.section == ClientSettingsSection::Er0sAgents {
+                match settings.er0s_agents.as_ref() {
+                    Some(editor) if !editor.loaded => " ↵ riprova ",
+                    Some(editor) if editor.field.is_some() => " ↵ salva ",
+                    _ => " ↵ scegli ",
+                }
+            } else if settings.section == ClientSettingsSection::Integrations {
                 " ↵ install "
             } else {
                 " ↵ apply "

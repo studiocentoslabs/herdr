@@ -22,6 +22,7 @@ mod client;
 mod config;
 mod copy_mode;
 mod detect;
+mod er0s_agents; // er0s role settings, see ER0S.md
 mod er0s_distribution; // er0s distribution, see ER0S.md
 mod events;
 use ghostty_vt as ghostty;
