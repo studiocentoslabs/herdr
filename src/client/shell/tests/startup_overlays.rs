@@ -312,7 +312,13 @@ fn startup_onboarding_is_client_rendered_and_modal() {
         })
         .collect::<Vec<_>>()
         .join("\n");
-    assert!(text.contains("terminal workspace manager for coding agents"));
+    // er0s distribution (ER0S.md): exercise the actual rendered welcome.
+    if crate::er0s_distribution::ACTIVE {
+        assert!(text.contains("er0s"));
+        assert!(text.contains("motore: herdr (Apache-2.0)"));
+    } else {
+        assert!(text.contains("terminal workspace manager for coding agents"));
+    }
     assert!(text.contains("this is a mouse-first terminal"));
     assert!(text.contains("ctrl+b enters prefix mode"));
     assert!(text.contains("install optional agent integrations"));

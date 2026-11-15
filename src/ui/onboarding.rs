@@ -1,7 +1,16 @@
 use ratatui::layout::Rect;
 
-pub(crate) const ONBOARDING_TITLE: &str = "  herdr";
-pub(crate) const ONBOARDING_SUBTITLE: &str = "  terminal workspace manager for coding agents";
+// er0s distribution (ER0S.md): product name and explicit engine attribution.
+pub(crate) const ONBOARDING_TITLE: &str = if crate::er0s_distribution::ACTIVE {
+    "  er0s"
+} else {
+    "  herdr"
+};
+pub(crate) const ONBOARDING_SUBTITLE: &str = if crate::er0s_distribution::ACTIVE {
+    "  motore: herdr (Apache-2.0)"
+} else {
+    "  terminal workspace manager for coding agents"
+};
 pub(crate) const ONBOARDING_DESCRIPTION: [&str; 3] = [
     "  this is a mouse-first terminal.",
     "  click the sidebar to switch workspaces, drag pane",

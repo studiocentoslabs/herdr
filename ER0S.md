@@ -14,6 +14,7 @@ e i test di herdr girano senza cambiamenti.
 
 | Modifica | File | Perché |
 | --- | --- | --- |
+| Nome er0s nella finestra, nel titolo predefinito e nel primo avvio; avviso «motore: herdr (Apache-2.0)» nel primo avvio e nell'aiuto | `src/config/window_title.rs`, `src/terminal_effects.rs`, `src/ui/onboarding.rs`, `src/client/shell/sidebar.rs`, `src/client/shell/endpoint_sidebar.rs`, `src/client/shell/overlays.rs` | Distinguere il prodotto dal motore conservandone l'attribuzione; i titoli personalizzati restano configurabili |
 | Cartelle di configurazione, stato e socket sotto `er0s-terminal` (`er0s-terminal-dev` in debug) invece di `herdr` | `src/er0s_distribution.rs`, `src/config/io.rs` | Convivere con un herdr installato sulla stessa macchina senza toccarne config, plugin e sessioni |
 | Niente aggiornamento dal canale ufficiale herdr (`update` rifiutato, nessun controllo in background) | `src/er0s_distribution.rs`, `src/update.rs` | Un aggiornamento ufficiale sostituirebbe il binario con herdr e toglierebbe la distribuzione er0s; si aggiorna con `riallinea-fork.sh` |
 | Installazione come `er0s-terminal` con il plugin er0s registrato | `packaging/er0s/installa.sh` | Il comando `er0s` esiste già (runtime di er0s); il plugin è lo stesso pacchetto usato con herdr ufficiale |

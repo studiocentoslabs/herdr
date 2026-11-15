@@ -258,7 +258,12 @@ pub(super) fn render_expanded(
         workspace_area.x,
         workspace_area.y,
         workspace_area.width,
-        " machines",
+        // er0s distribution (ER0S.md): identify the product with saved machines too.
+        if crate::er0s_distribution::ACTIVE {
+            " er0s · machines"
+        } else {
+            " machines"
+        },
         Style::default()
             .fg(palette.overlay0)
             .add_modifier(Modifier::BOLD),
