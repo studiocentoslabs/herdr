@@ -23,6 +23,23 @@ pub(crate) const UPDATE_REFUSED: &str =
 #[cfg(test)]
 mod tests {
     #[test]
+    fn er0s_distribution_presents_its_name_and_engine() {
+        if !super::ACTIVE {
+            return;
+        }
+        let config = crate::config::Config::default();
+        assert!(config.ui.window_title.starts_with("er0s"));
+        assert_eq!(crate::ui::ONBOARDING_TITLE.trim(), "er0s");
+        assert_eq!(
+            crate::ui::ONBOARDING_SUBTITLE.trim(),
+            "motore: herdr (Apache-2.0)"
+        );
+        let mut title = Vec::new();
+        crate::terminal_effects::write_window_title(&mut title, None).unwrap();
+        assert_eq!(title, b"\x1b]0;er0s\x07");
+    }
+
+    #[test]
     fn app_dir_never_collides_with_herdr() {
         for debug in [false, true] {
             let name = super::app_dir_name(debug);

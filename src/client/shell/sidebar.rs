@@ -220,7 +220,12 @@ pub(crate) fn render_sidebar(
         workspace_area.x,
         workspace_area.y,
         workspace_area.width,
-        " spaces",
+        // er0s distribution (ER0S.md): keep the product name visible after onboarding.
+        if crate::er0s_distribution::ACTIVE {
+            " er0s · spaces"
+        } else {
+            " spaces"
+        },
         Style::default()
             .fg(palette.overlay0)
             .add_modifier(Modifier::BOLD),

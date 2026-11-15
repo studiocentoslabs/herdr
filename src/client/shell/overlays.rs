@@ -1132,7 +1132,12 @@ fn render_help_overlay(
         i.x,
         i.y,
         i.width,
-        "keybinds",
+        // er0s distribution (ER0S.md): attribution remains accessible after onboarding.
+        if crate::er0s_distribution::ACTIVE {
+            "er0s · motore: herdr (Apache-2.0)"
+        } else {
+            "keybinds"
+        },
         Style::default()
             .fg(p.text)
             .bg(p.panel_bg)

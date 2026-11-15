@@ -13,7 +13,12 @@ pub(crate) fn write_terminal_bells<W: Write>(writer: &mut W, count: u16) -> io::
 }
 
 pub(crate) fn write_window_title<W: Write>(writer: &mut W, title: Option<&str>) -> io::Result<()> {
-    let title = title.unwrap_or("herdr");
+    // er0s distribution (ER0S.md): also identify the client when resetting a title.
+    let title = title.unwrap_or(if crate::er0s_distribution::ACTIVE {
+        "er0s"
+    } else {
+        "herdr"
+    });
     let safe_title = title
         .chars()
         .filter(|ch| !matches!(*ch, '\u{1b}' | '\u{7}' | '\u{9c}'))
@@ -43,6 +48,11 @@ mod tests {
 
         output.clear();
         write_window_title(&mut output, None).unwrap();
-        assert_eq!(output, b"\x1b]0;herdr\x07");
+        let expected: &[u8] = if crate::er0s_distribution::ACTIVE {
+            b"\x1b]0;er0s\x07"
+        } else {
+            b"\x1b]0;herdr\x07"
+        };
+        assert_eq!(output, expected);
     }
 }

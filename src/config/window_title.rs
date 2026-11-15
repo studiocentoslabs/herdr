@@ -2,7 +2,12 @@
 pub(crate) const MAX_WINDOW_TITLE_CHARS: usize = 200;
 
 pub(crate) fn default_window_title() -> String {
-    "{hostname}: {workspace}".to_string()
+    // er0s distribution (ER0S.md): identify this client in the host window.
+    if crate::er0s_distribution::ACTIVE {
+        "er0s · {hostname}: {workspace}".to_string()
+    } else {
+        "{hostname}: {workspace}".to_string()
+    }
 }
 
 pub(crate) fn sanitize_window_title_text(value: &str) -> Option<String> {
