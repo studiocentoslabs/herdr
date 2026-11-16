@@ -1,3 +1,4 @@
+// er0s fork: role preferences in the existing settings overlay (ER0S.md).
 use super::*;
 
 fn choice_style(selected: bool, palette: &Palette) -> Style {
@@ -70,16 +71,36 @@ pub(super) fn render_settings_overlay(
             .integrations
             .iter()
             .any(|integration| integration.state == crate::api::schema::IntegrationState::Outdated);
+    let tabs: Vec<_> = ClientSettingsSection::ALL
+        .iter()
+        .map(|section| {
+            let badge = *section == ClientSettingsSection::Integrations && integration_badge;
+            let label = if badge {
+                format!(" ● {} ", section.label())
+            } else {
+                format!(" {} ", section.label())
+            };
+            (*section, badge, label)
+        })
+        .collect();
+    // Keep the active section visible when the new tab overflows a narrow terminal.
+    let selected_tab = tabs
+        .iter()
+        .position(|(section, _, _)| *section == settings.section)
+        .unwrap_or(0);
+    let mut first_tab = 0;
+    let mut used: u32 = tabs[..=selected_tab]
+        .iter()
+        .map(|(_, _, label)| u32::from(display_width(label)) + 1)
+        .sum();
+    while first_tab < selected_tab && used > u32::from(inner.width) + 1 {
+        used -= u32::from(display_width(&tabs[first_tab].2)) + 1;
+        first_tab += 1;
+    }
     let mut tab_x = inner.x;
     let mut tab_hits = Vec::new();
-    for section in ClientSettingsSection::ALL {
-        let badge = *section == ClientSettingsSection::Integrations && integration_badge;
-        let label = if badge {
-            format!(" ● {} ", section.label())
-        } else {
-            format!(" {} ", section.label())
-        };
-        let width = display_width(&label).min(inner.right().saturating_sub(tab_x));
+    for (section, badge, label) in tabs.iter().skip(first_tab) {
+        let width = display_width(label).min(inner.right().saturating_sub(tab_x));
         let rect = Rect::new(tab_x, inner.y + 1, width, 1);
         let active = *section == settings.section;
         let style = if active {
@@ -91,8 +112,8 @@ pub(super) fn render_settings_overlay(
             Style::default().fg(palette.overlay1).bg(palette.panel_bg)
         };
         buffer.set_style(rect, style);
-        put_text(buffer, rect.x, rect.y, rect.width, &label, style);
-        if badge && !active {
+        put_text(buffer, rect.x, rect.y, rect.width, label, style);
+        if *badge && !active {
             put_text(
                 buffer,
                 rect.x.saturating_add(1),
@@ -194,6 +215,58 @@ pub(super) fn render_settings_overlay(
                 &mut choice_hits,
             );
         }
+        ClientSettingsSection::Er0sAgents | ClientSettingsSection::Er0sComplexity => {
+            if let Some(editor) = &settings.er0s_agents {
+                let title = editor.title();
+                put_text(
+                    buffer,
+                    content.x,
+                    content.y,
+                    content.width,
+                    &title,
+                    Style::default()
+                        .fg(palette.text)
+                        .bg(palette.panel_bg)
+                        .add_modifier(Modifier::BOLD),
+                );
+                put_text(
+                    buffer,
+                    content.x,
+                    content.y + 1,
+                    content.width,
+                    &editor.message,
+                    Style::default()
+                        .fg(if editor.error {
+                            palette.red
+                        } else {
+                            palette.overlay1
+                        })
+                        .bg(palette.panel_bg),
+                );
+                let visible = usize::from(content.height.saturating_sub(3));
+                let scroll = settings.selected.saturating_sub(visible.saturating_sub(1));
+                for (offset, (index, label)) in editor
+                    .choices()
+                    .iter()
+                    .enumerate()
+                    .skip(scroll)
+                    .take(visible)
+                    .enumerate()
+                {
+                    let rect =
+                        Rect::new(content.x, content.y + 3 + offset as u16, content.width, 1);
+                    draw_choice(
+                        buffer,
+                        rect,
+                        label,
+                        index == settings.selected,
+                        false,
+                        palette,
+                    );
+                    choice_hits.push((rect, index));
+                }
+            }
+        }
         ClientSettingsSection::Integrations => {
             render_integrations(buffer, content, settings, palette);
         }
@@ -211,7 +284,16 @@ pub(super) fn render_settings_overlay(
         button(
             buffer,
             primary,
-            if settings.section == ClientSettingsSection::Integrations {
+            if matches!(
+                settings.section,
+                ClientSettingsSection::Er0sAgents | ClientSettingsSection::Er0sComplexity
+            ) {
+                match settings.er0s_agents.as_ref() {
+                    Some(editor) if !editor.loaded => " ↵ riprova ",
+                    Some(editor) if editor.field.is_some() => " ↵ salva ",
+                    _ => " ↵ scegli ",
+                }
+            } else if settings.section == ClientSettingsSection::Integrations {
                 " ↵ install "
             } else {
                 " ↵ apply "

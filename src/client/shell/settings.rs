@@ -1,3 +1,4 @@
+// er0s fork: role preferences in the existing settings overlay (ER0S.md).
 use super::*;
 use crossterm::event::{KeyCode, KeyModifiers};
 
@@ -34,6 +35,7 @@ pub(super) fn integration_needs_install(info: &crate::api::schema::IntegrationIn
 impl ClientShellState {
     pub(super) fn open_settings_overlay(&mut self) {
         self.overlay = Some(ClientShellOverlay::Settings(ClientSettingsOverlay {
+            er0s_agents: None,
             section: ClientSettingsSection::Theme,
             selected: theme_index(&self.config.theme_name),
             original_theme_name: self.config.theme_name.clone(),
@@ -51,7 +53,9 @@ impl ClientShellState {
             ClientSettingsSection::Indicators => indicator_index(self.config.status_indicators),
             ClientSettingsSection::Sound => usize::from(!self.config.sound_enabled),
             ClientSettingsSection::Toast => toast_index(self.config.toast_delivery),
-            ClientSettingsSection::Integrations => 0,
+            ClientSettingsSection::Integrations
+            | ClientSettingsSection::Er0sAgents
+            | ClientSettingsSection::Er0sComplexity => 0,
         }
     }
 
@@ -73,6 +77,15 @@ impl ClientShellState {
         if let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_mut() {
             settings.section = section;
             settings.selected = selected;
+            settings.er0s_agents = match section {
+                ClientSettingsSection::Er0sAgents => Some(Box::new(
+                    crate::er0s_agents::Editor::load(&crate::er0s_agents::path()),
+                )),
+                ClientSettingsSection::Er0sComplexity => Some(Box::new(
+                    crate::er0s_agents::Editor::load_complexity(&crate::er0s_agents::path()),
+                )),
+                _ => None,
+            };
         }
         if request_integrations {
             self.queue_integration_list(outcome, true);
@@ -100,6 +113,12 @@ impl ClientShellState {
                 ClientSettingsSection::Indicators | ClientSettingsSection::Sound => 2,
                 ClientSettingsSection::Toast => 4,
                 ClientSettingsSection::Integrations => settings.integrations.len(),
+                ClientSettingsSection::Er0sAgents | ClientSettingsSection::Er0sComplexity => {
+                    settings
+                        .er0s_agents
+                        .as_ref()
+                        .map_or(0, |e| e.choices().len())
+                }
             },
             _ => 0,
         }
@@ -223,6 +242,14 @@ impl ClientShellState {
                 );
             }
             ClientSettingsSection::Integrations => self.install_recommended_integrations(outcome),
+            ClientSettingsSection::Er0sAgents | ClientSettingsSection::Er0sComplexity => {
+                if let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_mut() {
+                    if let Some(editor) = settings.er0s_agents.as_mut() {
+                        settings.selected = editor.apply(selected);
+                    }
+                }
+                outcome.repaint = true;
+            }
         }
     }
 
@@ -357,6 +384,15 @@ impl ClientShellState {
         }
         let (code, modifiers) = crate::config::normalize_key_combo((key.code, key.modifiers));
         if code == KeyCode::Esc {
+            if let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_mut() {
+                if let Some(editor) = settings.er0s_agents.as_mut() {
+                    if let Some(field) = editor.field.take() {
+                        settings.selected = field;
+                        outcome.repaint = true;
+                        return true;
+                    }
+                }
+            }
             if !matches!(
                 self.overlay,
                 Some(ClientShellOverlay::Settings(ClientSettingsOverlay {

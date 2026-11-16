@@ -506,12 +506,41 @@ fn agent_start_rejects_a_shell_replaced_by_a_foreground_program() {
         .unwrap()
         .to_string();
     let topology = pane_topology_snapshot(&run_cli_json(&socket_path, &["pane", "list"]));
-    assert!(
-        run_cli(&socket_path, &["pane", "run", &pane_id, "exec sleep 5"])
-            .status
-            .success()
+    // er0s fork (ER0S.md): observe exec completion instead of racing a 150 ms sleep.
+    // This foreground process lives until pane cleanup, so its lifetime cannot
+    // expire during the rejection check when the machine is busy.
+    let pid_file = base.join("foreground.pid");
+    let command = format!(
+        "exec python3 -c 'import os,pathlib,signal; pathlib.Path({:?}).write_text(str(os.getpid())); signal.pause()'",
+        pid_file.to_str().unwrap()
     );
-    thread::sleep(Duration::from_millis(150));
+    assert!(run_cli(&socket_path, &["pane", "run", &pane_id, &command])
+        .status
+        .success());
+    let pid = wait_for_pid_file(&pid_file, Duration::from_secs(5))
+        .expect("foreground program did not start");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let info = run_cli_json(&socket_path, &["pane", "process-info", "--pane", &pane_id]);
+        let ready = info["result"]["process_info"]["foreground_processes"]
+            .as_array()
+            .is_some_and(|processes| {
+                processes.iter().any(|process| {
+                    process["pid"].as_u64() == Some(u64::from(pid))
+                        && process["name"]
+                            .as_str()
+                            .is_some_and(|name| name.to_lowercase().contains("python"))
+                })
+            });
+        if ready {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "foreground program was not observed: {info}"
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
 
     let started = run_cli(
         &socket_path,

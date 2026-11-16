@@ -388,16 +388,30 @@ pub(super) enum ClientSettingsSection {
     Sound,
     Toast,
     Integrations,
+    Er0sAgents, // er0s fork (ER0S.md): presentation only.
+    Er0sComplexity,
 }
 
 impl ClientSettingsSection {
-    pub(super) const ALL: &[Self] = &[
-        Self::Theme,
-        Self::Indicators,
-        Self::Sound,
-        Self::Toast,
-        Self::Integrations,
-    ];
+    pub(super) const ALL: &[Self] = if crate::er0s_distribution::ACTIVE {
+        &[
+            Self::Theme,
+            Self::Indicators,
+            Self::Sound,
+            Self::Toast,
+            Self::Integrations,
+            Self::Er0sAgents,
+            Self::Er0sComplexity,
+        ]
+    } else {
+        &[
+            Self::Theme,
+            Self::Indicators,
+            Self::Sound,
+            Self::Toast,
+            Self::Integrations,
+        ]
+    };
 
     pub(super) fn label(self) -> &'static str {
         match self {
@@ -406,12 +420,16 @@ impl ClientSettingsSection {
             Self::Sound => "sound",
             Self::Toast => "toasts",
             Self::Integrations => "integrations",
+            Self::Er0sAgents => "er0s · agenti",
+            Self::Er0sComplexity => "complessità",
         }
     }
 }
 
 #[derive(Debug)]
 pub(super) struct ClientSettingsOverlay {
+    // er0s fork settings (ER0S.md), loaded only when entering the section.
+    pub(super) er0s_agents: Option<Box<crate::er0s_agents::Editor>>,
     pub(super) section: ClientSettingsSection,
     pub(super) selected: usize,
     pub(super) original_theme_name: String,
