@@ -1031,3 +1031,65 @@ fn er0s_agents_keyboard_navigation_saves_without_reloading_server() {
     assert!(state.overlay.is_none());
     std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
 }
+
+#[test]
+fn er0s_complexity_tab_is_adjacent_to_roles_and_distribution_only() {
+    let sections = ClientSettingsSection::ALL;
+    let index = sections
+        .iter()
+        .position(|section| *section == ClientSettingsSection::Er0sComplexity);
+    assert_eq!(index.is_some(), crate::er0s_distribution::ACTIVE);
+    if let Some(index) = index {
+        assert_eq!(sections[index - 1], ClientSettingsSection::Er0sAgents);
+    }
+}
+
+#[test]
+fn er0s_complexity_keyboard_saves_without_endpoint_actions_at_80_columns() {
+    let path = std::env::temp_dir()
+        .join(format!("er0s-complexity-keyboard-{}", std::process::id()))
+        .join("er0s.toml");
+    let mut state = ClientShellState::new(ClientShellConfig::from_config(&Config::default()));
+    state.set_snapshot(Box::new(snapshot()));
+    state.set_pane_surface(surface());
+    state.open_settings_overlay();
+    if let Some(ClientShellOverlay::Settings(settings)) = state.overlay.as_mut() {
+        settings.section = ClientSettingsSection::Er0sComplexity;
+        settings.er0s_agents = Some(Box::new(crate::er0s_agents::Editor::load_complexity(&path)));
+    }
+    let frame = state.compose(80, 24).unwrap();
+    let text = frame
+        .cells
+        .iter()
+        .map(|cell| cell.symbol.as_str())
+        .collect::<String>();
+    assert!(text.contains("semplice · modello: haiku"));
+    assert!(text.contains("media · modello: sonnet"));
+    assert!(text.contains("difficile · modello: opus"));
+    if crate::er0s_distribution::ACTIVE {
+        let (tab, _) = state
+            .hits
+            .settings_tabs
+            .iter()
+            .find(|(_, section)| *section == ClientSettingsSection::Er0sComplexity)
+            .expect("active complexity tab visible");
+        assert_eq!(tab.width, " complessità ".chars().count() as u16);
+    }
+    let mut outcome = ClientShellInput::default();
+    // Simple defaults to haiku (third choice); move up to sonnet and save.
+    for code in [KeyCode::Enter, KeyCode::Up, KeyCode::Enter] {
+        state.route_settings_key(&TerminalKey::new(code, KeyModifiers::empty()), &mut outcome);
+    }
+    assert_eq!(
+        crate::er0s_agents::Complexity::load(&path).unwrap().0[0],
+        "sonnet"
+    );
+    let saved = std::fs::read_to_string(&path).unwrap();
+    for code in [KeyCode::Enter, KeyCode::Up, KeyCode::Esc, KeyCode::Esc] {
+        state.route_settings_key(&TerminalKey::new(code, KeyModifiers::empty()), &mut outcome);
+    }
+    assert!(state.overlay.is_none());
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), saved);
+    assert!(outcome.actions.is_empty());
+    std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+}

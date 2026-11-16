@@ -389,6 +389,7 @@ pub(super) enum ClientSettingsSection {
     Toast,
     Integrations,
     Er0sAgents, // er0s fork (ER0S.md): presentation only.
+    Er0sComplexity,
 }
 
 impl ClientSettingsSection {
@@ -400,6 +401,7 @@ impl ClientSettingsSection {
             Self::Toast,
             Self::Integrations,
             Self::Er0sAgents,
+            Self::Er0sComplexity,
         ]
     } else {
         &[
@@ -419,6 +421,7 @@ impl ClientSettingsSection {
             Self::Toast => "toasts",
             Self::Integrations => "integrations",
             Self::Er0sAgents => "er0s · agenti",
+            Self::Er0sComplexity => "complessità",
         }
     }
 }

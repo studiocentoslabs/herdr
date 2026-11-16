@@ -77,3 +77,28 @@ le altre tabelle e gli altri ruoli, ma riformatta il TOML e non conserva i comme
 Nessun campo del protocollo, motore o registro plugin cambia; licenza e attribuzione originali restano intatte.
 
 La prova nativa ha inoltre mostrato un test instabile già esistente, `agent_start_rejects_a_shell_replaced_by_a_foreground_program` (`tests/cli/agents.rs`): rosso nella suite, verde da solo. La fixture ora osserva il PID del programma Python nel foreground tramite l’API e lo mantiene attivo fino alla pulizia, invece di aspettare 150 ms con un processo che termina dopo cinque secondi. Le asserzioni sull’errore `agent_pane_busy` e sulla topologia restano invariate; nessuna modifica al motore, nessun nuovo test escluso.
+
+
+## Complessità nelle impostazioni
+
+Aggiunta del 15/11/2026, ordine del direttore delle 17:00: accanto a **er0s · agenti** compare la sezione
+**complessità**. Selezioni semplice, media o difficile con ↑/↓, Invio apre l’elenco dei modelli Claude,
+Invio salva; Esc torna indietro senza salvare la scelta aperta. Nei terminali stretti la barra scorre per
+mantenere visibile la sezione attiva. Il file e il percorso sono gli stessi delle preferenze per ruolo.
+
+```toml
+[complessita]
+semplice = "haiku"
+media = "sonnet"
+difficile = "opus"
+```
+
+Questi sono i default anche per una singola voce mancante. CLI o modello per ruolo non vengono modificati:
+il salvataggio della complessità conserva `[ruoli.*]`, `[esecutori.*]`, `[compiti.*]` e le altre tabelle,
+comprese le configurazioni parziali di ruolo ammesse dal lettore del plugin. Un livello sconosciuto, un tipo
+errato o un modello fuori dall’elenco opus/sonnet/haiku vengono rifiutati senza sostituire il file.
+
+Il consumer è `plugin/herdr/first_run.py` della PR Autuori-Holding/er0s#2514 (`selected_model`):
+**modello del singolo compito > complessità del compito > ruolo**. La TUI cambia solo le tre preferenze,
+non classifica i compiti e non modifica il lanciatore né i pannelli già aperti. Un override in `[compiti.*]`
+resta prioritario; se la complessità manca, rimane il valore per ruolo.

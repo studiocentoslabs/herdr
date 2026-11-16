@@ -53,7 +53,9 @@ impl ClientShellState {
             ClientSettingsSection::Indicators => indicator_index(self.config.status_indicators),
             ClientSettingsSection::Sound => usize::from(!self.config.sound_enabled),
             ClientSettingsSection::Toast => toast_index(self.config.toast_delivery),
-            ClientSettingsSection::Integrations | ClientSettingsSection::Er0sAgents => 0,
+            ClientSettingsSection::Integrations
+            | ClientSettingsSection::Er0sAgents
+            | ClientSettingsSection::Er0sComplexity => 0,
         }
     }
 
@@ -75,12 +77,14 @@ impl ClientShellState {
         if let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_mut() {
             settings.section = section;
             settings.selected = selected;
-            settings.er0s_agents = if section == ClientSettingsSection::Er0sAgents {
-                Some(Box::new(crate::er0s_agents::Editor::load(
-                    &crate::er0s_agents::path(),
-                )))
-            } else {
-                None
+            settings.er0s_agents = match section {
+                ClientSettingsSection::Er0sAgents => Some(Box::new(
+                    crate::er0s_agents::Editor::load(&crate::er0s_agents::path()),
+                )),
+                ClientSettingsSection::Er0sComplexity => Some(Box::new(
+                    crate::er0s_agents::Editor::load_complexity(&crate::er0s_agents::path()),
+                )),
+                _ => None,
             };
         }
         if request_integrations {
@@ -109,10 +113,12 @@ impl ClientShellState {
                 ClientSettingsSection::Indicators | ClientSettingsSection::Sound => 2,
                 ClientSettingsSection::Toast => 4,
                 ClientSettingsSection::Integrations => settings.integrations.len(),
-                ClientSettingsSection::Er0sAgents => settings
-                    .er0s_agents
-                    .as_ref()
-                    .map_or(0, |e| e.choices().len()),
+                ClientSettingsSection::Er0sAgents | ClientSettingsSection::Er0sComplexity => {
+                    settings
+                        .er0s_agents
+                        .as_ref()
+                        .map_or(0, |e| e.choices().len())
+                }
             },
             _ => 0,
         }
@@ -236,7 +242,7 @@ impl ClientShellState {
                 );
             }
             ClientSettingsSection::Integrations => self.install_recommended_integrations(outcome),
-            ClientSettingsSection::Er0sAgents => {
+            ClientSettingsSection::Er0sAgents | ClientSettingsSection::Er0sComplexity => {
                 if let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_mut() {
                     if let Some(editor) = settings.er0s_agents.as_mut() {
                         settings.selected = editor.apply(selected);
