@@ -7,6 +7,7 @@
 #             DIR/share/er0s-terminal/plugins/er0s (copia, cosi' non dipende dal checkout da cui arriva)
 #   --binary  binario costruito con ER0S_DISTRIBUTION=1 (target/release/herdr); si rifiuta un herdr qualunque
 #   --plugin  cartella del plugin er0s (plugin/herdr nel repo er0s), con herdr-plugin.toml e id = "er0s"
+#             Se accanto c'è il pacchetto pubblico plugin/er0s, include manifest e skill dei ruoli.
 #
 # Rilanciato con gli stessi argomenti lascia lo stesso risultato. Non scrive mai un file chiamato herdr e non tocca
 # le cartelle di herdr: config e registro plugin vanno sotto er0s-terminal (XDG_CONFIG_HOME/er0s-terminal se definita).
@@ -43,6 +44,12 @@ dest_plugin="$PREFIX/share/er0s-terminal/plugins/er0s"
 tmp_plugin="$(mktemp -d "$PREFIX/share/er0s-terminal/plugins/.er0s.XXXXXX")"
 trap 'rm -rf -- "$tmp_plugin"' EXIT
 tar -C "$PLUGIN" --exclude=.git --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C "$tmp_plugin" -xf -
+cli_source="$PLUGIN/../er0s"
+if [ -f "$cli_source/.claude-plugin/plugin.json" ] && [ -f "$cli_source/.codex-plugin/plugin.json" ]; then
+  [ -d "$cli_source/skills" ] || die "mancano le skill del pacchetto CLI"
+  mkdir -- "$tmp_plugin/cli"
+  cp -R -- "$cli_source/.claude-plugin" "$cli_source/.codex-plugin" "$cli_source/skills" "$tmp_plugin/cli/"
+fi
 chmod 755 "$tmp_plugin"
 if [ -d "$dest_plugin" ]; then
   vecchio="$dest_plugin.vecchio.$$"; mv -- "$dest_plugin" "$vecchio"; mv -- "$tmp_plugin" "$dest_plugin"; rm -rf -- "$vecchio"
